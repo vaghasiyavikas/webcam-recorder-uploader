@@ -29,11 +29,13 @@ const App = (): React.ReactElement => {
   }, [messageState]);
 
   const handleStartRecording = () => {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
-      // Assign stream to videoRef for playing video in video element
-      videoRef.current.srcObject = stream;
-      // Start media stream data when user start recording
-      mediaRecorderRef.current = new MediaRecorder(stream);
+    // Clear preview video instance if already exists to avoid conflict during recording video
+    if(previewVideoRef?.current.src){
+      previewVideoRef.current.src = null
+    }
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true}).then((stream) => {
+      videoRef.current.srcObject = stream; // Display the video stream
+      mediaRecorderRef.current = new MediaRecorder(stream); // Start media recording
       mediaRecorderRef.current.ondataavailable = handleDataAvailable;
       mediaRecorderRef.current.start();
       setRecordedChunks([]);
