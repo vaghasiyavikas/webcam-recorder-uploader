@@ -6,11 +6,12 @@ import "./App.scss";
 const App = (): React.ReactElement => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [messageState, setMessageState] = useState<string | undefined>();
-  const previewVideoRef = useRef<HTMLVideoElement>(null); // Added preview video reference
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [messageState, setMessageState] = useState<"success" | "error" | undefined>();
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null); // Reference for the media recorder instance
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
 
+  // Effect to update the preview video source when there are recorded chunks
   useEffect(()=>{
     if (previewVideoRef.current && recordedChunks.length) {
       const recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
@@ -18,6 +19,7 @@ const App = (): React.ReactElement => {
     }
   },[recordedChunks]);
 
+  // Effect to handle message dismissal after 5 seconds
   useEffect(() => {
     if(messageState){
       setTimeout(() => {
@@ -26,10 +28,11 @@ const App = (): React.ReactElement => {
     }
   }, [messageState]);
 
-
   const handleStartRecording = () => {
     navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
+      // Assign stream to videoRef for playing video in video element
       videoRef.current.srcObject = stream;
+      // Start media stream data when user start recording
       mediaRecorderRef.current = new MediaRecorder(stream);
       mediaRecorderRef.current.ondataavailable = handleDataAvailable;
       mediaRecorderRef.current.start();
@@ -40,6 +43,7 @@ const App = (): React.ReactElement => {
   const handleStopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
+      // To stop playing the video, clear the videoRef on stop recording for each track.
       if (videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         const tracks = stream.getTracks();
@@ -49,6 +53,7 @@ const App = (): React.ReactElement => {
     }
   };
 
+  // Function to handle data available during recording
   const handleDataAvailable = (e: BlobEvent) => {
     if (e.data.size > 0) {
       setRecordedChunks((prev) => prev.concat(e.data));
@@ -80,7 +85,9 @@ const App = (): React.ReactElement => {
   return (
       <div className="video-container">
         <h2>{recordedChunks.length ? "Recorded video" : "Webcam recorder"}</h2>
+        {/* Render video while recording*/}
         <video className="video" controls ref={videoRef} style={{ display: videoRef?.current?.srcObject ? 'block' : 'none' }} autoPlay />
+        {/* Render preview video after recording*/}
         <video className="video preview-video" controls ref={previewVideoRef} style={{ display: recordedChunks.length ? 'block' : 'none' }} />
         <Button variant="outlined" color="primary" disabled={!!videoRef?.current?.srcObject} onClick={handleStartRecording}>
           Start Recording
